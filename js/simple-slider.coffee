@@ -40,17 +40,17 @@
           boxSizing: "border-box"
         .insertBefore @input
       @slider.attr("id", @input.attr("id") + "-slider") if @input.attr("id")
-      
+
       @track = @createDivElement("track")
         .css
           width: "100%"
-      
+
       if @settings.highlight
         # Create the highlighting track on top of the track
         @highlightTrack = @createDivElement("highlight-track")
           .css
             width: "0"
-      
+
       # Create the slider drag target
       @dragger = @createDivElement("dragger")
 
@@ -62,7 +62,7 @@
 
       @track.css
         marginTop: @track.outerHeight()/-2
-  
+
       if @settings.highlight
         @highlightTrack.css
           marginTop: @track.outerHeight()/-2
@@ -73,38 +73,38 @@
 
       # Hook up drag/drop mouse events
       @track
-        .mousedown (e) =>
+        .bind 'mousedown touchstart', (e) =>
           @trackEvent(e)
 
       if @settings.highlight
         @highlightTrack
-          .mousedown (e) =>
+          .bind 'mousedown touchstart', (e) =>
             @trackEvent(e)
 
       @dragger
-        .mousedown (e) =>
-          return unless e.which == 1
+        .bind 'mousedown touchstart', (e) =>
+          return unless e.type != 'mousedown' || e.which == 1
 
           # We've started moving
           @dragging = true
           @dragger.addClass "dragging"
 
           # Update the slider position
-          @domDrag(e.pageX, e.pageY)
+          @domDrag e
 
           false
 
       $("body")
-        .mousemove (e) =>
+        .bind 'mousemove touchmove', (e) =>
           if @dragging
             # Update the slider position
-            @domDrag(e.pageX, e.pageY)
+            @domDrag e
 
             # Always show a pointer when dragging
             $("body").css cursor: "pointer"
 
 
-        .mouseup (e) =>
+        .bind 'mouseup touchend', (e) =>
           if @dragging
             # Finished dragging
             @dragging = false
@@ -115,7 +115,7 @@
 
       # Set slider initial position
       @pagePos = 0
-      
+
       # Fill in initial slider value
       if @input.val() == ""
         @value = @getRange().min
@@ -144,7 +144,7 @@
           cursor: "pointer"
         .appendTo @slider
       return item
-    
+
 
     # Set the ratio (value between 0 and 1) of the slider.
     # Exposed via el.slider("setRatio", ratio)
@@ -179,14 +179,22 @@
 
     # Respond to an event on a track
     trackEvent: (e) -> 
-      return unless e.which == 1
+      return unless e.type != 'mousedown' || e.which == 1
 
-      @domDrag(e.pageX, e.pageY, true)
+      @domDrag e
       @dragging = true
       false
 
     # Respond to a dom drag event
-    domDrag: (pageX, pageY, animate=false) ->
+    domDrag: (e, animate=false) ->
+      [pageX, pageY] =
+        if e.originalEvent && e.originalEvent.touches # jQuery users
+          [e.originalEvent.touches[0].pageX, e.originalEvent.touches[0].pageY]
+        else if e.touches # For Zepto users
+          [e.touches[0].pageX, e.touches[0].pageY]
+        else
+          [e.pageX, e.pageY]
+
       # Normalize position within allowed range
       pagePos = pageX - @slider.offset().left
       pagePos = Math.min(@slider.outerWidth(), pagePos)
@@ -208,7 +216,7 @@
           @setSliderPositionFromValue(value, animate)
         else
           @setSliderPosition(pagePos, animate)
-          
+
     # Set the slider position given a slider canvas position
     setSliderPosition: (position, animate=false) ->
       if animate and @settings.animate
@@ -222,7 +230,7 @@
     setSliderPositionFromValue: (value, animate=false) ->
       # Get the slide ratio from the value
       ratio = @valueToRatio(value)
-      
+
       # Set the slider position
       @setSliderPosition(ratio * @slider.outerWidth(), animate)
 
@@ -252,7 +260,7 @@
         $.each @settings.allowedValues, ->
           if closest == null || Math.abs(this - rawValue) < Math.abs(closest - rawValue)
             closest = this
-        
+
         return closest
       else if @settings.step
         maxSteps = (range.max - range.min) / @settings.step
@@ -276,7 +284,7 @@
           (closestIdx+0.5)/@settings.allowedValues.length
         else
           (closestIdx)/(@settings.allowedValues.length - 1)
-        
+
       else
         # Get slider ratio for continuous values
         range = @getRange()
@@ -327,7 +335,7 @@
     $(this).each ->
       if settingsOrMethod and settingsOrMethod in publicMethods
         obj = $(this).data("slider-object")
-        
+
         obj[settingsOrMethod].apply(obj, params)
       else
         settings = settingsOrMethod

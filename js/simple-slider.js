@@ -64,31 +64,31 @@ var __slice = [].slice,
         marginTop: this.dragger.outerWidth() / -2,
         marginLeft: this.dragger.outerWidth() / -2
       });
-      this.track.mousedown(function(e) {
+      this.track.bind('mousedown touchstart', function(e) {
         return _this.trackEvent(e);
       });
       if (this.settings.highlight) {
-        this.highlightTrack.mousedown(function(e) {
+        this.highlightTrack.bind('mousedown touchstart', function(e) {
           return _this.trackEvent(e);
         });
       }
-      this.dragger.mousedown(function(e) {
-        if (e.which !== 1) {
+      this.dragger.bind('mousedown touchstart', function(e) {
+        if (!(e.type !== 'mousedown' || e.which === 1)) {
           return;
         }
         _this.dragging = true;
         _this.dragger.addClass("dragging");
-        _this.domDrag(e.pageX, e.pageY);
+        _this.domDrag(e);
         return false;
       });
-      $("body").mousemove(function(e) {
+      $("body").bind('mousemove touchmove', function(e) {
         if (_this.dragging) {
-          _this.domDrag(e.pageX, e.pageY);
+          _this.domDrag(e);
           return $("body").css({
             cursor: "pointer"
           });
         }
-      }).mouseup(function(e) {
+      }).bind('mouseup touchend', function(e) {
         if (_this.dragging) {
           _this.dragging = false;
           _this.dragger.removeClass("dragging");
@@ -143,19 +143,20 @@ var __slice = [].slice,
     };
 
     SimpleSlider.prototype.trackEvent = function(e) {
-      if (e.which !== 1) {
+      if (!(e.type !== 'mousedown' || e.which === 1)) {
         return;
       }
-      this.domDrag(e.pageX, e.pageY, true);
+      this.domDrag(e);
       this.dragging = true;
       return false;
     };
 
-    SimpleSlider.prototype.domDrag = function(pageX, pageY, animate) {
-      var pagePos, ratio, value;
+    SimpleSlider.prototype.domDrag = function(e, animate) {
+      var pagePos, pageX, pageY, ratio, value, _ref;
       if (animate == null) {
         animate = false;
       }
+      _ref = e.originalEvent && e.originalEvent.touches ? [e.originalEvent.touches[0].pageX, e.originalEvent.touches[0].pageY] : e.touches ? [e.touches[0].pageX, e.touches[0].pageY] : [e.pageX, e.pageY], pageX = _ref[0], pageY = _ref[1];
       pagePos = pageX - this.slider.offset().left;
       pagePos = Math.min(this.slider.outerWidth(), pagePos);
       pagePos = Math.max(0, pagePos);
